@@ -56,15 +56,9 @@ class Program
             }
             else
             {
-                // List all available commands if no command is provided
-                Log.Information("Listing available commands.");
-                Console.WriteLine("Available commands:");
-                foreach (var commandName in registry.ListCommands())
-                {
-                    Console.WriteLine(commandName);
-                }
-
                 Console.WriteLine("No command provided. Please provide a command.");
+                var command = registry.GetCommand("help");
+                command([]); // Pass the remaining arguments to the command
             }
         }
         catch (Exception ex)

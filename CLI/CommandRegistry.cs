@@ -13,10 +13,14 @@ namespace Lain.CLI
         // Serilog logger
         private readonly ILogger _logger;
 
-        // Constructor that accepts a logger
+        // Constructor that initializes the logger and registers basic commands
         public CommandRegistry()
         {
             _logger = Log.ForContext<CommandRegistry>(); // Creates a logger specific to this class
+
+            // Register basic commands: help and version
+            RegisterCommand("help", HelpCommand);
+            RegisterCommand("version", VersionCommand);
         }
 
         // Method to register a new command
@@ -51,6 +55,26 @@ namespace Lain.CLI
         {
             _logger.Information("Listing all registered commands.");
             return _commands.Keys;
+        }
+
+        // Hardcoded Help command implementation
+        private void HelpCommand(string[] args)
+        {
+            Console.WriteLine("Available commands:");
+            foreach (var command in _commands.Keys)
+            {
+                Console.WriteLine($" - {command}");
+            }
+        }
+
+        // Hardcoded Version command implementation
+        private void VersionCommand(string[] args)
+        {
+            const string version = "Lain CLI version 0.1.1";
+            Console.WriteLine(version);
+            Console.WriteLine("by @tfgrass\nReleased under Artistic License 2.0");
+
+            _logger.Information("Version command executed. Version: {Version}", version);
         }
 
         // Method to load commands dynamically from the specified folder (e.g., Commands)
@@ -100,6 +124,5 @@ namespace Lain.CLI
 
             return commandTypes;
         }
-
     }
 }
