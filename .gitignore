@@ -45,3 +45,5 @@ project.fragment.lock.json
 # Rider/JetBrains
 .idea/
 *.iml
+
+publish

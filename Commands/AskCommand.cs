@@ -1,9 +1,13 @@
 using System;
 using OpenAI;
+
 namespace Lain.Commands
 {
     public class AskCommand
     {
+        // Static variable to track if it's the first call
+        private static bool isFirstCall = true;
+
         public static string CommandName => "ask";
 
         public static void Execute(string[] args)
@@ -24,9 +28,21 @@ namespace Lain.Commands
 
             lmsConnector.SendAsync(
                 question,
-                content => Console.WriteLine($"Answer: {content}"),
+                content => Console.Write(outputLain(content)),
                 error => Console.WriteLine($"Error: {error}")
             ).Wait(); // Wait for the async task to complete
+            Console.WriteLine(); // Add a new line after the response
+        }
+
+        // Method to prefix the first response with "lain> "
+        private static string outputLain(string content)
+        {
+            if (isFirstCall)
+            {
+                isFirstCall = false;
+                return $"lain> {content}";
+            }
+            return content;
         }
     }
 }
