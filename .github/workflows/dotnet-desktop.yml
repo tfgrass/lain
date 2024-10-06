@@ -25,12 +25,9 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+    # Skipping .NET SDK setup since it is already installed
 
-    - name: Install dependencies
+    - name: Restore dependencies
       run: dotnet restore $env:Solution_Name
 
     - name: Publish self-contained single-file executable
