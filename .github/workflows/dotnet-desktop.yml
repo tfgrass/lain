@@ -32,8 +32,13 @@ jobs:
       run: |
         dotnet publish lain.sln --configuration Release --output $env:Output_Directory -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=true -r ${{ matrix.runtime }}
 
-    - name: Upload build artifacts
+    - name: Zip the build output
+      run: |
+        cd $env:Output_Directory
+        zip -r ../lain-${{ matrix.runtime }}.zip .  # Create a zip file for the output
+
+    - name: Upload ZIP artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: Published Executables
-        path: ${{ env.Output_Directory }}
+        name: Executables-${{ matrix.runtime }}  # Name the artifact based on the platform
+        path: lain-${{ matrix.runtime }}.zip  # Upload the ZIP file
