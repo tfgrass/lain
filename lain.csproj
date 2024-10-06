@@ -17,9 +17,11 @@
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
-  <!-- Include all .cs files in the Commands folder -->
+  <!-- Include all .cs files in the Commands, CLI, and Connectors folders -->
   <ItemGroup>
     <Compile Include="Commands\*.cs" />
+    <Compile Include="CLI\*.cs" />
+    <Compile Include="Connectors\*.cs" />
   </ItemGroup>
 
 </Project>
