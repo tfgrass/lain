@@ -10,7 +10,6 @@ jobs:
   build:
     strategy:
       matrix:
-        configuration: [Debug, Release]
         runtime: [win-x64, linux-x64, linux-arm64, osx-x64, osx-arm64]
 
     runs-on: ${{ matrix.runtime == 'win-x64' && 'windows-latest' || 'ubuntu-latest' }}
@@ -31,15 +30,7 @@ jobs:
 
     - name: Publish self-contained single-file executable
       run: |
-        dotnet publish lain.sln \
-          --configuration ${{ matrix.configuration }} \
-          --output $env:Output_Directory \
-          -p:PublishSingleFile=true \
-          -p:SelfContained=true \
-          -p:PublishTrimmed=true \
-          -r ${{ matrix.runtime }}
-      env:
-        Configuration: ${{ matrix.configuration }}
+        dotnet publish lain.sln --configuration Release --output $env:Output_Directory -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=true -r ${{ matrix.runtime }}
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
