@@ -38,10 +38,11 @@ jobs:
       run: |
         Compress-Archive -Path $env:Output_Directory\* -DestinationPath lain-${{ matrix.runtime }}.zip
 
-    # Zip the build output for Linux/macOS
+    # Zip the build output for Linux/macOS using zip
     - name: Zip output (Linux/macOS)
       if: matrix.runtime != 'win-x64'
       run: |
+        sudo apt-get install -y zip  # Ensure zip is installed on Linux runners
         cd $env:Output_Directory
         zip -r ../lain-${{ matrix.runtime }}.zip .  # Create a zip file for the output
 
