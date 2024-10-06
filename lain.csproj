@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,12 +10,16 @@
   <ItemGroup>
     <PackageReference Include="AutoGen.Core" Version="0.2.1" />
     <PackageReference Include="AutoGen.OpenAI" Version="0.2.1" />
+    <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Serilog" Version="4.0.2" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
-
+  <!-- Include all .cs files in the Commands folder -->
+  <ItemGroup>
+    <Compile Include="Commands\*.cs" />
+  </ItemGroup>
 
 </Project>
