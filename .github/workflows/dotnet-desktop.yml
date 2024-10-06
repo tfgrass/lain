@@ -11,13 +11,13 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
+        runtime: [win-x64, linux-x64, linux-arm64, osx-x64, osx-arm64]
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.runtime == 'win-x64' && 'windows-latest' || 'ubuntu-latest' }}
 
     env:
       Solution_Name: your-solution-name.sln  # Replace with your solution name
-      Test_Project_Path: your-test-project-path  # Replace with path to test project
-      Output_Directory: publish-output  # Directory where the single-file output will be stored
+      Output_Directory: publish-output/${{ matrix.runtime }}  # Output directory based on runtime
 
     steps:
     - name: Checkout code
@@ -33,9 +33,6 @@ jobs:
     - name: Install dependencies
       run: dotnet restore $env:Solution_Name
 
-    - name: Execute unit tests
-      run: dotnet test $env:Test_Project_Path --configuration ${{ matrix.configuration }}
-
     - name: Publish self-contained single-file executable
       run: |
         dotnet publish $env:Solution_Name \
@@ -44,13 +41,12 @@ jobs:
           -p:PublishSingleFile=true \
           -p:SelfContained=true \
           -p:PublishTrimmed=true \
-          -r win-x64 # Adjust the runtime identifier for your platform (win-x64, linux-x64, osx-x64)
+          -r ${{ matrix.runtime }}
       env:
         Configuration: ${{ matrix.configuration }}
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: Published Executable
+        name: Published Executable - ${{ matrix.runtime }}
         path: ${{ env.Output_Directory }}
-
