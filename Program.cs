@@ -26,8 +26,8 @@ class Program
             logConfig.MinimumLevel.Information();
         }
 
-        // ToDo: sinnvolles file logging
-//        logConfig.WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day);
+        // ToDo: sinnvoll file logging
+        // logConfig.WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day);
 
         // Create the logger
         Log.Logger = logConfig.CreateLogger();
@@ -36,8 +36,8 @@ class Program
         {
             var registry = new CommandRegistry();
 
-            // Load commands from the Commands folder
-            registry.LoadCommands("Commands");
+            // Load commands (no need for a folder argument anymore)
+            registry.LoadCommands();
 
             // Execute a command if provided
             if (args.Length > 0)
@@ -58,7 +58,7 @@ class Program
             {
                 Console.WriteLine("No command provided. Please provide a command.");
                 var command = registry.GetCommand("help");
-                command([]); // Pass the remaining arguments to the command
+                command?.Invoke(Array.Empty<string>()); // Pass an empty argument array
             }
         }
         catch (Exception ex)

@@ -21,6 +21,9 @@ namespace Lain.CLI
             // Register basic commands: help and version
             RegisterCommand("help", HelpCommand);
             RegisterCommand("version", VersionCommand);
+
+            // Load additional commands from the current assembly
+            LoadCommands();
         }
 
         // Method to register a new command
@@ -34,12 +37,11 @@ namespace Lain.CLI
             else
             {
                 _logger.Warning("Attempted to register command '{CommandName}' which is already registered.", name);
-                throw new ArgumentException($"Command '{name}' is already registered.");
             }
         }
 
         // Method to get a command by name
-        public Action<string[]> GetCommand(string name)
+        public Action<string[]>? GetCommand(string name)
         {
             if (_commands.TryGetValue(name, out var command))
             {
@@ -47,7 +49,7 @@ namespace Lain.CLI
                 return command;
             }
             _logger.Warning("Command '{CommandName}' was not found.", name);
-            return null;
+            return null;  // Fixes CS8603
         }
 
         // Method to list all registered commands
@@ -77,32 +79,47 @@ namespace Lain.CLI
             _logger.Information("Version command executed. Version: {Version}", version);
         }
 
-        // Method to load commands dynamically from the specified folder (e.g., Commands)
-        public void LoadCommands(string folderPath)
-        {
-            _logger.Information("Loading commands from folder: {FolderPath}", folderPath);
-            var commandTypes = LoadCommandModules(folderPath);
-            foreach (var commandType in commandTypes)
-            {
-                var commandNameProperty = commandType.GetProperty("CommandName", BindingFlags.Public | BindingFlags.Static);
-                var executeMethod = commandType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Static);
+        // Method to load commands dynamically from the current assembly
+ public void LoadCommands()
+{
+    _logger.Information("Loading commands from the Lain.Commands namespace.");
 
-                if (commandNameProperty != null && executeMethod != null)
+    var commandTypes = LoadCommandModules();
+    foreach (var commandType in commandTypes)
+    {
+        var commandNameProperty = commandType.GetProperty("CommandName", BindingFlags.Public | BindingFlags.Static);
+        var executeMethod = commandType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Static);
+
+        if (commandNameProperty != null && executeMethod != null)
+        {
+            var commandName = (string)commandNameProperty.GetValue(null)!;  // Use null-forgiving operator (fixes CS8600)
+            
+            // Check if the command is already registered to avoid re-registering (fixes duplicate registration)
+            if (!_commands.ContainsKey(commandName))
+            {
+                Action<string[]> handler = (args) =>
                 {
-                    var commandName = (string)commandNameProperty.GetValue(null);
-                    Action<string[]> handler = (args) => executeMethod.Invoke(null, new object[] { args });
-                    RegisterCommand(commandName, handler);
-                    _logger.Information("Command '{CommandName}' from type '{CommandType}' was successfully loaded.", commandName, commandType.FullName);
-                }
-                else
-                {
-                    _logger.Warning("Failed to load command from type '{CommandType}' because either CommandName or Execute method is missing.", commandType.FullName);
-                }
+                    // Correctly handle the Invoke method, as it should be a valid statement
+                    executeMethod.Invoke(null, new object[] { args });
+                };
+                RegisterCommand(commandName, handler);
+                _logger.Information("Command '{CommandName}' from type '{CommandType}' was successfully loaded.", commandName, commandType.FullName);
+            }
+            else
+            {
+             //   _logger.Warning("Command '{CommandName}' is already registered, skipping registration.");
             }
         }
+        else
+        {
+            _logger.Warning("Failed to load command from type '{CommandType}' because either CommandName or Execute method is missing.", commandType.FullName);
+        }
+    }
+}
 
-        // Helper method to load command types from the given folder
-        private IEnumerable<Type> LoadCommandModules(string folderPath)
+
+        // Helper method to load command types from the current assembly
+        private IEnumerable<Type> LoadCommandModules()
         {
             List<Type> commandTypes = new List<Type>();
 
@@ -111,7 +128,7 @@ namespace Lain.CLI
 
             foreach (var type in types)
             {
-                // Filter out compiler-generated types (e.g., <>c or <>c__DisplayClass)
+                // Filter for the command types in the Lain.Commands namespace
                 if (type.Namespace != null
                     && type.Namespace.StartsWith("Lain.Commands")
                     && type.IsClass
@@ -120,6 +137,11 @@ namespace Lain.CLI
                     commandTypes.Add(type);
                     _logger.Information("Found command type: {CommandType}", type.FullName);
                 }
+            }
+
+            if (commandTypes.Count == 0)
+            {
+                _logger.Error("No command types were found in the assembly. Please check if the 'Commands' namespace is correct.");
             }
 
             return commandTypes;
