@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Serilog;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Lain.CLI
 {
@@ -17,14 +16,19 @@ namespace Lain.CLI
         // Constructor that initializes the logger and registers basic commands
         public CommandRegistry()
         {
-            _logger = Log.ForContext<CommandRegistry>();
+            _logger = Log.ForContext<CommandRegistry>(); // Creates a logger specific to this class
 
             // Register basic commands: help and version
             RegisterCommand("help", HelpCommand);
             RegisterCommand("version", VersionCommand);
 
-            // Load additional commands from the current assembly
-            LoadCommands(); // Ensure LoadCommands is called in the constructor
+         var askCommand = typeof(Lain.Commands.AskCommand);
+        var chatCommand = typeof(Lain.Commands.ChatCommand);
+        var docCommand = typeof(Lain.Commands.DocCommand);
+        // Add other command classes as needed
+
+        // Load commands dynamically as usual
+        LoadCommands();
         }
 
         // Method to register a new command
@@ -80,46 +84,46 @@ namespace Lain.CLI
             _logger.Information("Version command executed. Version: {Version}", version);
         }
 
-        // Public method to load commands dynamically from the current assembly
-        public void LoadCommands()
+        // Method to load commands dynamically from the current assembly
+ public void LoadCommands()
+{
+    _logger.Information("Loading commands from the Lain.Commands namespace.");
+
+    var commandTypes = LoadCommandModules();
+    foreach (var commandType in commandTypes)
+    {
+        var commandNameProperty = commandType.GetProperty("CommandName", BindingFlags.Public | BindingFlags.Static);
+        var executeMethod = commandType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Static);
+
+        if (commandNameProperty != null && executeMethod != null)
         {
-            _logger.Information("Loading commands from the Lain.Commands namespace.");
-
-            var commandTypes = LoadCommandModules();
-            foreach (var commandType in commandTypes)
+            var commandName = (string)commandNameProperty.GetValue(null)!;  // Use null-forgiving operator (fixes CS8600)
+            
+            // Check if the command is already registered to avoid re-registering (fixes duplicate registration)
+            if (!_commands.ContainsKey(commandName))
             {
-                var commandNameProperty = commandType.GetProperty("CommandName", BindingFlags.Public | BindingFlags.Static);
-                var executeMethod = commandType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Static);
-
-                if (commandNameProperty != null && executeMethod != null)
+                Action<string[]> handler = (args) =>
                 {
-                    var commandName = (string)commandNameProperty.GetValue(null)!;  // Use null-forgiving operator (fixes CS8600)
-                    
-                    // Check if the command is already registered to avoid re-registering (fixes duplicate registration)
-                    if (!_commands.ContainsKey(commandName))
-                    {
-                        Action<string[]> handler = (args) =>
-                        {
-                            // Correctly handle the Invoke method, as it should be a valid statement
-                            executeMethod.Invoke(null, new object[] { args });
-                        };
-                        RegisterCommand(commandName, handler);
-                        _logger.Information("Command '{CommandName}' from type '{CommandType}' was successfully loaded.", commandName, commandType.FullName);
-                    }
-                    else
-                    {
-                        _logger.Warning("Command '{CommandName}' is already registered, skipping registration.");
-                    }
-                }
-                else
-                {
-                    _logger.Warning("Failed to load command from type '{CommandType}' because either CommandName or Execute method is missing.", commandType.FullName);
-                }
+                    // Correctly handle the Invoke method, as it should be a valid statement
+                    executeMethod.Invoke(null, new object[] { args });
+                };
+                RegisterCommand(commandName, handler);
+                _logger.Information("Command '{CommandName}' from type '{CommandType}' was successfully loaded.", commandName, commandType.FullName);
+            }
+            else
+            {
+             //   _logger.Warning("Command '{CommandName}' is already registered, skipping registration.");
             }
         }
+        else
+        {
+            _logger.Warning("Failed to load command from type '{CommandType}' because either CommandName or Execute method is missing.", commandType.FullName);
+        }
+    }
+}
 
-        // Apply the DynamicallyAccessedMembers attribute to preserve the types loaded via reflection
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+
+        // Helper method to load command types from the current assembly
         private IEnumerable<Type> LoadCommandModules()
         {
             List<Type> commandTypes = new List<Type>();
