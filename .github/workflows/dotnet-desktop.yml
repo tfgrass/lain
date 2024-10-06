@@ -16,7 +16,6 @@ jobs:
     runs-on: ${{ matrix.runtime == 'win-x64' && 'windows-latest' || 'ubuntu-latest' }}
 
     env:
-      Solution_Name: your-solution-name.sln  # Replace with your solution name
       Output_Directory: publish-output/${{ matrix.runtime }}  # Output directory based on runtime
 
     steps:
@@ -28,11 +27,11 @@ jobs:
     # Skipping .NET SDK setup since it is already installed
 
     - name: Restore dependencies
-      run: dotnet restore $env:Solution_Name
+      run: dotnet restore lain.sln  # Directly reference the solution file
 
     - name: Publish self-contained single-file executable
       run: |
-        dotnet publish $env:Solution_Name \
+        dotnet publish lain.sln \
           --configuration ${{ matrix.configuration }} \
           --output $env:Output_Directory \
           -p:PublishSingleFile=true \
