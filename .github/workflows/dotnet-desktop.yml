@@ -1,0 +1,56 @@
+name: .NET Core Desktop
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    runs-on: windows-latest
+
+    env:
+      Solution_Name: your-solution-name.sln  # Replace with your solution name
+      Test_Project_Path: your-test-project-path  # Replace with path to test project
+      Output_Directory: publish-output  # Directory where the single-file output will be stored
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Install dependencies
+      run: dotnet restore $env:Solution_Name
+
+    - name: Execute unit tests
+      run: dotnet test $env:Test_Project_Path --configuration ${{ matrix.configuration }}
+
+    - name: Publish self-contained single-file executable
+      run: |
+        dotnet publish $env:Solution_Name \
+          --configuration ${{ matrix.configuration }} \
+          --output $env:Output_Directory \
+          -p:PublishSingleFile=true \
+          -p:SelfContained=true \
+          -p:PublishTrimmed=true \
+          -r win-x64 # Adjust the runtime identifier for your platform (win-x64, linux-x64, osx-x64)
+      env:
+        Configuration: ${{ matrix.configuration }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: Published Executable
+        path: ${{ env.Output_Directory }}
+
