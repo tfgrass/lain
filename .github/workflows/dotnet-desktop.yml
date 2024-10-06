@@ -32,7 +32,15 @@ jobs:
       run: |
         dotnet publish lain.sln --configuration Release --output $env:Output_Directory -p:PublishSingleFile=true -p:SelfContained=true -p:PublishTrimmed=true -r ${{ matrix.runtime }}
 
-    - name: Zip the build output
+    # Zip the build output for Windows using PowerShell
+    - name: Zip output (Windows)
+      if: matrix.runtime == 'win-x64'
+      run: |
+        Compress-Archive -Path $env:Output_Directory\* -DestinationPath lain-${{ matrix.runtime }}.zip
+
+    # Zip the build output for Linux/macOS
+    - name: Zip output (Linux/macOS)
+      if: matrix.runtime != 'win-x64'
       run: |
         cd $env:Output_Directory
         zip -r ../lain-${{ matrix.runtime }}.zip .  # Create a zip file for the output
