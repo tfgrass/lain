@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Serilog;
 
 namespace Lain.CLI
@@ -13,7 +12,7 @@ namespace Lain.CLI
         // Serilog logger
         private readonly ILogger _logger;
 
-        // Constructor that initializes the logger and registers basic commands
+        // Constructor that initializes the logger and registers commands manually
         public CommandRegistry()
         {
             _logger = Log.ForContext<CommandRegistry>(); // Creates a logger specific to this class
@@ -22,13 +21,12 @@ namespace Lain.CLI
             RegisterCommand("help", HelpCommand);
             RegisterCommand("version", VersionCommand);
 
-         var askCommand = typeof(Lain.Commands.AskCommand);
-        var chatCommand = typeof(Lain.Commands.ChatCommand);
-        var docCommand = typeof(Lain.Commands.DocCommand);
-        // Add other command classes as needed
+            // Register custom commands explicitly
+            RegisterCommand("ask", Lain.Commands.AskCommand.Execute);
+            RegisterCommand("chat", Lain.Commands.ChatCommand.Execute);
+            RegisterCommand("doc", Lain.Commands.DocCommand.Execute);
 
-        // Load commands dynamically as usual
-        LoadCommands();
+            _logger.Information("All commands have been hardcoded and registered successfully.");
         }
 
         // Method to register a new command
@@ -82,74 +80,6 @@ namespace Lain.CLI
             Console.WriteLine("by @tfgrass\nReleased under Artistic License 2.0");
 
             _logger.Information("Version command executed. Version: {Version}", version);
-        }
-
-        // Method to load commands dynamically from the current assembly
- public void LoadCommands()
-{
-    _logger.Information("Loading commands from the Lain.Commands namespace.");
-
-    var commandTypes = LoadCommandModules();
-    foreach (var commandType in commandTypes)
-    {
-        var commandNameProperty = commandType.GetProperty("CommandName", BindingFlags.Public | BindingFlags.Static);
-        var executeMethod = commandType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Static);
-
-        if (commandNameProperty != null && executeMethod != null)
-        {
-            var commandName = (string)commandNameProperty.GetValue(null)!;  // Use null-forgiving operator (fixes CS8600)
-            
-            // Check if the command is already registered to avoid re-registering (fixes duplicate registration)
-            if (!_commands.ContainsKey(commandName))
-            {
-                Action<string[]> handler = (args) =>
-                {
-                    // Correctly handle the Invoke method, as it should be a valid statement
-                    executeMethod.Invoke(null, new object[] { args });
-                };
-                RegisterCommand(commandName, handler);
-                _logger.Information("Command '{CommandName}' from type '{CommandType}' was successfully loaded.", commandName, commandType.FullName);
-            }
-            else
-            {
-             //   _logger.Warning("Command '{CommandName}' is already registered, skipping registration.");
-            }
-        }
-        else
-        {
-            _logger.Warning("Failed to load command from type '{CommandType}' because either CommandName or Execute method is missing.", commandType.FullName);
-        }
-    }
-}
-
-
-        // Helper method to load command types from the current assembly
-        private IEnumerable<Type> LoadCommandModules()
-        {
-            List<Type> commandTypes = new List<Type>();
-
-            var assembly = Assembly.GetExecutingAssembly();  // Load current assembly
-            var types = assembly.GetTypes();
-
-            foreach (var type in types)
-            {
-                // Filter for the command types in the Lain.Commands namespace
-                if (type.Namespace != null
-                    && type.Namespace.StartsWith("Lain.Commands")
-                    && type.IsClass
-                    && !type.Name.Contains("<")) // This filters out the compiler-generated inner classes
-                {
-                    commandTypes.Add(type);
-                    _logger.Information("Found command type: {CommandType}", type.FullName);
-                }
-            }
-
-            if (commandTypes.Count == 0)
-            {
-                _logger.Error("No command types were found in the assembly. Please check if the 'Commands' namespace is correct.");
-            }
-
-            return commandTypes;
         }
     }
 }

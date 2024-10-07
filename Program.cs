@@ -37,7 +37,7 @@ class Program
             var registry = new CommandRegistry();
 
             // Load commands (no need for a folder argument anymore)
-            registry.LoadCommands();
+      ///      registry.LoadCommands();
 
             // Execute a command if provided
             if (args.Length > 0)
